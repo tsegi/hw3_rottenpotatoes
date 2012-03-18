@@ -16,8 +16,14 @@ end
 
 Then /I should see "(.*)" before "(.*)"/ do |e1, e2|
   #  ensure that that e1 occurs before e2.
-  #  page.content  is the entire content of the page as a string.
-  assert false, "Unimplmemented"
+  #  page.body  is the entire content of the page as a string.
+
+  step %{I should see "#{e1}"}
+  step %{I should see "#{e2}"}
+  pos1 = page.body.index("#{e1}")
+  pos2 = page.body.index("#{e2}")
+  assert(pos1 < pos2)
+
 end
 
 # Make it easier to express checking or unchecking several boxes at once
@@ -29,21 +35,22 @@ When /I (un)?check the following ratings: (.*)/ do |uncheck, rating_list|
   #   iterate over the ratings and reuse the "When I check..." or
   #   "When I uncheck..." steps in lines 89-95 of web_steps.rb
   
-  all_ratings = Movie.all_ratings
-  if (uncheck == nil)
-    check_ratings = rating_list.split ','
-    uncheck_ratings = all_ratings - check_ratings
-  else
-    uncheck_ratings = rating_list.split ','
-    check_ratings = all_ratings - uncheck_ratings
-  end
-  
-  check_ratings.each |rating|
-    When "I check \"#{rating.strip}\""
-  end
-  
-  uncheck_ratings.each |rating|
-    When "I uncheck \"#{rating.strip}\""
-  end
-  
+  selected_ratings = rating_list.gsub(/\s+/, "").split ','
+
+
+  selected_ratings.each do |rating|
+    if (uncheck == nil)
+      step %{I check "ratings[#{rating}]"}
+    else
+      step %{I uncheck "ratings[#{rating}]"}
+    end
+  end    
+end
+
+Then /I should see all of the movie/ do 
+  page.all('table#movies tr').count.should == Movie.count + 1
+end
+
+Then /I should see no movie(s)?/ do |plural|
+  page.all('table#movies tr').count.should == 1
 end
